@@ -16,27 +16,26 @@ void mouseReleased(){
     }else if(mouseX-dragX1>100){  // add space
       dragPressed = false;
       currentTyped += " ";
+      //TODO
+      lastWord = "";
+      //text("space", 120, 340);
     }else if (mouseX-dragX1<-100){  // remove last input character
       dragPressed = false;
       currentTyped = currentTyped.substring(0, Math.max(0,currentTyped.length()-1));
+      //TODO
+      lastWord = lastWord.substring(0, Math.max(0, lastWord.length()-1));
     }else{
       if (mouseX>xul && mouseX<xul+sizeOfInputArea && mouseY>yul && mouseY<yul+sizeOfInputArea){
         int col_index = int((mouseX-xul) / int(sizeOfInputArea/col));
         int row_index = int((mouseY-yul) / int(sizeOfInputArea/row));
         if (row_index>0){
           // System.out.println("Pressed: "+str(row_index)+" "+str(col_index));
-          if (col_index == col-1){
-            currentTyped += suggestedChars[row_index-1];
-          }else{
-            char tempChar = char('a'+currentPage*((row-1)*(col-1))+(row_index-1)*(col-1)+col_index);
-            if (Character.isLetter(tempChar)){
-              currentTyped += tempChar;
-            }else{
-              currentTyped = currentTyped.substring(0, Math.max(currentTyped.lastIndexOf(' '),0));
-            }
-          }
+          currentTyped += pageKeys[currentPage][Math.max(row_index-1,0)*col+col_index];
+          //TODO
+          lastWord += pageKeys[currentPage][Math.max(row_index-1,0)*col+col_index];
         }else if (row_index == 0){
           currentTyped += autofillString;  //if tap textbox, apply autofill result
+          lastWord += autofillString;
         }
       }
     }

@@ -1,3 +1,6 @@
+import java.util.*;
+
+
 void draw()
 {
   background(255); //clear background
@@ -50,10 +53,22 @@ void draw()
     fill(255);
     text("NEXT > ", 125, 350); //draw next label
 
+    //example design draw code
+    //fill(255, 0, 0); //red button
+    //rect(width/2-sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw left red button
+    //fill(0, 255, 0); //green button
+    //rect(width/2-sizeOfInputArea/2+sizeOfInputArea/2, height/2-sizeOfInputArea/2+sizeOfInputArea/2, sizeOfInputArea/2, sizeOfInputArea/2); //draw right green button
+    //textAlign(CENTER);
+    //fill(200);
+    //text("" + currentLetter, width/2, height/2-sizeOfInputArea/4); //draw current letter
+    
+
+    //tempLetter = currentLetter;
     drawKeys();
+
     drawTextBar();
     drawOnPress();  // draw visuals on pressing key
-         
+                 
   }
   //drawFinger(); //no longer needed as we'll be deploying to an actual touschreen device
 }
@@ -64,31 +79,25 @@ void drawTextBar(){
     int firstIndex = Math.max(currentTyped.lastIndexOf(" "),0);
     String tmp = currentTyped.substring(firstIndex,currentTyped.length());
     fill(textBoxFontColor[0],textBoxFontColor[1],textBoxFontColor[2]);
-    textFont(createFont("Segoe UI", currentFont)); //set the font to arial 24. Creating fonts is expensive, so make difference sizes once in setup, not draw
-    if (textWidth(tmp) >= sizeOfInputArea){
-         currentFont -= 5;
-    }
-    else if (textWidth(tmp) <= sizeOfInputArea/2){
-        currentFont += 5;
-        currentFont = Math.min(currentFont, 40);
-    }
-    textFont(createFont("Segoe UI", currentFont)); //set the font to arial 24. Creating fonts is expensive, so make difference sizes once in setup, not draw
-    text(tmp, xul, 
+    text(tmp, xul+sizeOfInputArea/col/2, 
          yul+sizeOfInputArea/row/2);
     fill(textBoxAutofillColor[0],textBoxAutofillColor[1],textBoxAutofillColor[2]);
-    text(autofillString, xul+textWidth(tmp), yul+sizeOfInputArea/row/2);
+    text(autofillString, xul+sizeOfInputArea/col/2+textWidth(tmp), yul+sizeOfInputArea/row/2);
     fill(0);
 }
 
 void drawKeys(){
-    //nextLetter("the");
+    //suggestedChars = nextLetter("th");
+    suggestedChars = nextLetter(lastWord);
+    //System.out.println(finalList[0]);
     char[] tempKeys = pageKeys[currentPage];
+    System.out.println(lastWord);
     char tempChar = char('a'+currentPage*((row-1)*(col-1)));
     for (i=1; i<row; i++){
       for (j=0; j<col; j++){
         fill(50);
-        if ( j==col-1){
-          fill(suggestedCharBgColor[0],suggestedCharBgColor[1],suggestedCharBgColor[2]);
+        if (currentPage==0 && j==col-1){
+          fill(textBoxFontColor[0],textBoxFontColor[1],textBoxFontColor[2]);
         }
         rect(xul+j*sizeOfInputArea/col, 
              yul+i*sizeOfInputArea/row, 
@@ -106,15 +115,9 @@ void drawKeys(){
           keyChar = tempChar;
           tempChar++;
         }
-        fill(255);
         if (Character.isLetter(keyChar)){
           fill(255);
-          textFont(keyBoardFont);
           text(keyChar, xul+j*sizeOfInputArea/col+sizeOfInputArea/col/2-inputOffsetX, 
-               yul+i*sizeOfInputArea/row+sizeOfInputArea/row/2+inputOffSetY);
-        }else{
-          fill(acKeyColor[0],acKeyColor[1],acKeyColor[2]);
-          text("AC", xul+j*sizeOfInputArea/col+sizeOfInputArea/col/2-inputOffsetX-textWidth("A")/2, 
                yul+i*sizeOfInputArea/row+sizeOfInputArea/row/2+inputOffSetY);
         }
         tempLetter ++;
@@ -252,28 +255,92 @@ void drawFinger()
   }
   
 
-
-void nextLetter(String typed)
+char[] nextLetter(String typed)
 {
   String[] dictionary = loadStrings("short_dict.txt");
-  text("There are " + dictionary.length + " lines", 125, 340);
+  //text("There are " + dictionary.length + " lines", 125, 340);
   String[] predList = {};
   int typedLen = typed.length();
-  int count = 0;
-  text(typed, 100, 340);
+  
   for (int i = 0; i < dictionary.length; i++)
   {
     String word = dictionary[i];
     
-    if ((word.length() > typedLen) && (word.substring(0, typedLen)== typed))
+    if ((word.length() > typedLen) && (typed.equals(word.substring(0, typedLen)) == true))
     {
       predList = append(predList, word);
     }
   }
-  for (int i = 0; i < predList.length; i++) 
+
+  HashMap<String, LetterFreq> letterDict = new HashMap<String, LetterFreq>();
+
+  for (int i = 0; i < predList.length; i++)
   {
-    text(predList[i],125,340+30*i);
+    if (letterDict.size() > 5)
+    {
+      break;
+    }
+    String letter = predList[i].substring(typedLen, typedLen+1);
+    if (letterDict.containsKey(letter))
+    {
+      LetterFreq tmpEntry = letterDict.get(letter);
+      int tmpFreq = tmpEntry.getFreq();
+      LetterFreq newEntry = new LetterFreq(letter, tmpFreq+1);
+      letterDict.put(newEntry.getLetter(), newEntry);
+      //letterDict.put(letter, tmpFreq+1);
+    } else
+    {
+      LetterFreq newEntry = new LetterFreq(letter, 1);
+      letterDict.put(newEntry.getLetter(), newEntry);
+    }
   }
   
+  List<LetterFreq> letterByFreq = new ArrayList<LetterFreq>(letterDict.values());
+  Collections.sort(letterByFreq, new sortByFreq());
 
+  char[] finalList = {};
+  int count = 0;
+
+  for (LetterFreq lf : letterByFreq)
+  { 
+    count += 1;
+    if (count > 3)
+    {
+      break;
+    } 
+    finalList = append(finalList, lf.getLetter().charAt(0));   
+    // System.out.println(lf.getLetter());
+    // System.out.println(lf.getFreq());
+  }
+  //System.out.println(finalList[0]);
+  return finalList;
+
+}
+
+
+class LetterFreq 
+{
+  String letter;
+  int freq;
+  LetterFreq(String l, int f)
+  {
+    letter = l;
+    freq = f;
+  }
+  String getLetter()
+  {
+    return letter;
+  }
+  int getFreq()
+  {
+    return freq;
+  }
+}
+
+class sortByFreq implements Comparator<LetterFreq>
+{
+  int compare(LetterFreq lf1, LetterFreq lf2)
+  {
+    return (lf1.getFreq() - lf2.getFreq());
+  }
 }

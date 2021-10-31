@@ -48,8 +48,11 @@ for line in sys.stdin:
             letter_freq_dict[letter] += 1
         else:
             letter_freq_dict[letter] = 1
-
     # print(letter_freq_dict)
+    print(letter_freq_dict)
     final_list = sorted(letter_freq_dict, key=letter_freq_dict.get, reverse=True)
     print(final_list[0:3])
     # print(pred_list)
+
+
+
